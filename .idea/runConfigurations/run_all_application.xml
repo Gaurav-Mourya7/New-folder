@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="run all application" type="CompoundRunConfigurationType">
+    <toRun name="AppointmentApplication" type="SpringBootApplicationConfigurationType" />
+    <toRun name="EurekaServerApplication" type="SpringBootApplicationConfigurationType" />
+    <toRun name="GatewayApplication" type="SpringBootApplicationConfigurationType" />
+    <toRun name="MediaApplication" type="SpringBootApplicationConfigurationType" />
+    <toRun name="PharmacyApplication" type="SpringBootApplicationConfigurationType" />
+    <toRun name="ProfileMsApplication" type="SpringBootApplicationConfigurationType" />
+    <toRun name="UserMsApplication" type="SpringBootApplicationConfigurationType" />
+    <method v="2" />
+  </configuration>
+</component>
