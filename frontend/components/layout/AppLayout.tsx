@@ -63,6 +63,8 @@ const navigationByRole: Record<RoleLabel, NavItem[]> = {
     { name: "Medicines", href: "/pharmacy/medicines", icon: Pill },
     { name: "Inventory", href: "/pharmacy/inventory", icon: Package },
     { name: "Sales", href: "/pharmacy/sales", icon: DollarSign },
+    { name: "Patients", href: "/patient/management", icon: Users },
+    { name: "Doctors", href: "/doctor/management", icon: Stethoscope },
   ],
 }
 

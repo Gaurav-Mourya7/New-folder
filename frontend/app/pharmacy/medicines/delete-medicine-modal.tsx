@@ -64,7 +64,7 @@ export function DeleteMedicineModal({
           </div>
           
           <div className="text-sm text-muted-foreground">
-            <p><strong>⚠️ Warning:</strong> This action will:</p>
+            <p><strong>Warning:</strong> This action will:</p>
             <ul className="list-disc list-inside mt-2 space-y-1">
               <li>Permanently delete the medicine</li>
               <li>Remove all associated stock records</li>
