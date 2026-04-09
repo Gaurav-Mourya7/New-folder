@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { AppLayout } from "@/components/layout/AppLayout"
+import { useRouter } from "next/navigation"
+import AppLayout from "@/components/layout/AppLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -37,6 +38,7 @@ type DoctorUI = {
 }
 
 export default function DoctorManagement() {
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -104,6 +106,10 @@ export default function DoctorManagement() {
   const handleEdit = (id: string) => {
     setSelectedDoctorId(Number(id))
     setIsEditModalOpen(true)
+  }
+
+  const handleViewDetails = (id: string) => {
+    router.push(`/doctor/appointments`)
   }
 
   const handleDoctorAdded = () => {
@@ -221,68 +227,122 @@ export default function DoctorManagement() {
             {isLoading ? (
               <div className="py-12 text-center text-muted-foreground">Loading doctors...</div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">ID</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Name</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Email</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Phone</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Specialization</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Department</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Experience</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">License No</th>
-                      <th className="text-right py-3 px-4 font-medium text-muted-foreground text-sm">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredDoctors.map((doctor) => (
-                      <tr key={doctor.id} className="border-b last:border-0 hover:bg-muted/50">
-                        <td className="py-3 px-4 font-mono text-sm text-blue-600 font-semibold">#{doctor.id}</td>
-                        <td className="py-3 px-4 font-medium">{doctor.name}</td>
-                        <td className="py-3 px-4 text-muted-foreground">{doctor.email || "N/A"}</td>
-                        <td className="py-3 px-4 text-muted-foreground">{doctor.phone || "N/A"}</td>
-                        <td className="py-3 px-4">
-                          <Badge variant="outline">{doctor.specialization || "N/A"}</Badge>
-                        </td>
-                        <td className="py-3 px-4 text-muted-foreground">{doctor.department || "N/A"}</td>
-                        <td className="py-3 px-4 text-muted-foreground">{doctor.totalExp ? `${doctor.totalExp} years` : "N/A"}</td>
-                        <td className="py-3 px-4 text-muted-foreground">{doctor.licenseNo || "N/A"}</td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button variant="ghost" size="icon" className="size-8">
-                              <Eye className="size-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="size-8"
-                              onClick={() => handleEdit(doctor.id)}
-                            >
-                              <Pencil className="size-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDelete(doctor.id)}
-                              className="size-8 text-red-600"
-                            >
-                              <Trash2 className="size-4" />
-                            </Button>
-                          </div>
-                        </td>
+              <>
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">ID</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Name</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Email</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Phone</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Specialization</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Department</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Experience</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">License No</th>
+                        <th className="text-right py-3 px-4 font-medium text-muted-foreground text-sm">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {filteredDoctors.map((doctor) => (
+                        <tr key={doctor.id} className="border-b last:border-0 hover:bg-muted/50">
+                          <td className="py-3 px-4 font-mono text-sm text-blue-600 font-semibold">#{doctor.id}</td>
+                          <td className="py-3 px-4 font-medium">{doctor.name}</td>
+                          <td className="py-3 px-4 text-muted-foreground">{doctor.email || "N/A"}</td>
+                          <td className="py-3 px-4 text-muted-foreground">{doctor.phone || "N/A"}</td>
+                          <td className="py-3 px-4">
+                            <Badge variant="outline">{doctor.specialization || "N/A"}</Badge>
+                          </td>
+                          <td className="py-3 px-4 text-muted-foreground">{doctor.department || "N/A"}</td>
+                          <td className="py-3 px-4 text-muted-foreground">{doctor.totalExp ? `${doctor.totalExp} years` : "N/A"}</td>
+                          <td className="py-3 px-4 text-muted-foreground">{doctor.licenseNo || "N/A"}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button variant="ghost" size="icon" className="size-8" onClick={() => handleViewDetails(doctor.id)}>
+                                <Eye className="size-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-8"
+                                onClick={() => handleEdit(doctor.id)}
+                              >
+                                <Pencil className="size-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(doctor.id)}
+                                className="size-8 text-red-600"
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-4">
+                  {filteredDoctors.map((doctor) => (
+                    <Card key={doctor.id} className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="font-semibold text-lg">{doctor.name}</p>
+                          <p className="text-sm text-blue-600 font-mono">#{doctor.id}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="ghost" size="icon" className="size-8" onClick={() => handleViewDetails(doctor.id)}>
+                            <Eye className="size-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="size-8" onClick={() => handleEdit(doctor.id)}>
+                            <Pencil className="size-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(doctor.id)} className="size-8 text-red-600">
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Email:</span>
+                          <span className="font-medium">{doctor.email || "N/A"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Phone:</span>
+                          <span className="font-medium">{doctor.phone || "N/A"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Specialization:</span>
+                          <Badge variant="outline" className="text-xs">{doctor.specialization || "N/A"}</Badge>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Department:</span>
+                          <span className="font-medium">{doctor.department || "N/A"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Experience:</span>
+                          <span className="font-medium">{doctor.totalExp ? `${doctor.totalExp} years` : "N/A"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">License No:</span>
+                          <span className="font-medium">{doctor.licenseNo || "N/A"}</span>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
 
                 {filteredDoctors.length === 0 && (
                   <div className="py-12 text-center text-muted-foreground">
                     No doctors found matching your criteria.
                   </div>
                 )}
-              </div>
+              </>
             )}
           </CardContent>
         </Card>

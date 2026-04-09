@@ -4,7 +4,6 @@ import com.hms.UserMS.dto.LoginDto;
 import com.hms.UserMS.dto.ResponseDto;
 import com.hms.UserMS.dto.UserDto;
 import com.hms.UserMS.exception.HmsException;
-import com.hms.UserMS.jwt.CustomUserDetails;
 import com.hms.UserMS.jwt.JwtUtil;
 import com.hms.UserMS.jwt.MyUserDetailsService;
 import com.hms.UserMS.service.UserService;
@@ -14,10 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -64,6 +61,19 @@ public class UserController {
     @GetMapping("/test")
     public ResponseEntity<String> test(){
         return new ResponseEntity<>("Test", HttpStatus.OK);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<UserDto> getUser(@PathVariable Long id) throws HmsException {
+        UserDto userDto = userService.getUserById(id);
+        return new ResponseEntity<>(userDto, HttpStatus.OK);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ResponseDto> updateUser(@PathVariable Long id, @RequestBody UserDto userDto) {
+        userDto.setId(id);
+        userService.updateUser(userDto);
+        return new ResponseEntity<>(new ResponseDto("User updated successfully"), HttpStatus.OK);
     }
 
 }

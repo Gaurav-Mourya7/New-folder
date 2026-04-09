@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { User, Mail, Phone, MapPin, Calendar, Shield, Save } from "lucide-react"
-import { AppLayout } from "@/components/layout/AppLayout"
+import AppLayout from "@/components/layout/AppLayout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -49,6 +49,8 @@ export default function PatientProfile() {
   const [photoMediaId, setPhotoMediaId] = useState<number | null>(null)
   const [photoUrl, setPhotoUrl] = useState<string>("")
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
+  const [errors, setErrors] = useState<{ firstName?: string; lastName?: string; email?: string; phone?: string }>({})
+  const [apiError, setApiError] = useState<string | null>(null)
 
   const initials = useMemo(() => {
     const first = formData.firstName?.[0] ?? ""
@@ -154,9 +156,43 @@ export default function PatientProfile() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+    setErrors({})
+  }
+
+  const validateForm = (): boolean => {
+    const newErrors: { firstName?: string; lastName?: string; email?: string; phone?: string } = {}
+
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "First name is required"
+    } else if (formData.firstName.trim().length < 2) {
+      newErrors.firstName = "First name must be at least 2 characters"
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "Last name is required"
+    } else if (formData.lastName.trim().length < 1) {
+      newErrors.lastName = "Last name is required"
+    }
+
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Please enter a valid email address"
+    }
+
+    if (formData.phone && formData.phone.length < 10) {
+      newErrors.phone = "Phone number must be at least 10 digits"
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
   }
 
   const handleSave = async () => {
+    setApiError(null)
+
+    if (!validateForm()) {
+      return
+    }
+
     setIsSaving(true)
 
     try {
@@ -165,8 +201,8 @@ export default function PatientProfile() {
       const payload: PatientDto = {
         id: patientId,
         name: `${formData.firstName} ${formData.lastName}`.trim(),
-        email: formData.email,
-        phone: formData.phone,
+        email: formData.email || null,
+        phone: formData.phone || null,
         dob: formData.dateOfBirth || null,
         address: formData.address || null,
         city: formData.city || null,
@@ -181,11 +217,15 @@ export default function PatientProfile() {
       }
 
       await updatePatient(payload)
-    } catch {
-      // keep UI state; surface errors later if needed
+    } catch (error) {
+      console.error("Failed to update profile:", error)
+      const errorMessage = error instanceof Error ? error.message : "Failed to update profile"
+      setApiError(errorMessage)
     } finally {
       setIsSaving(false)
-      setIsEditing(false)
+      if (!apiError) {
+        setIsEditing(false)
+      }
     }
   }
 
@@ -224,6 +264,12 @@ export default function PatientProfile() {
             </div>
           )}
         </div>
+
+        {apiError && (
+          <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+            {apiError}
+          </div>
+        )}
 
         {/* Profile Photo Section */}
         <Card>
@@ -308,7 +354,9 @@ export default function PatientProfile() {
                   value={formData.firstName}
                   onChange={(e) => handleInputChange("firstName", e.target.value)}
                   disabled={!isEditing}
+                  className={errors.firstName ? "border-destructive" : ""}
                 />
+                {errors.firstName && <p className="text-sm text-destructive">{errors.firstName}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName">Last Name</Label>
@@ -317,7 +365,9 @@ export default function PatientProfile() {
                   value={formData.lastName}
                   onChange={(e) => handleInputChange("lastName", e.target.value)}
                   disabled={!isEditing}
+                  className={errors.lastName ? "border-destructive" : ""}
                 />
+                {errors.lastName && <p className="text-sm text-destructive">{errors.lastName}</p>}
               </div>
             </div>
 
@@ -375,7 +425,9 @@ export default function PatientProfile() {
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   disabled={!isEditing}
+                  className={errors.email ? "border-destructive" : ""}
                 />
+                {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
@@ -385,7 +437,9 @@ export default function PatientProfile() {
                   value={formData.phone}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
                   disabled={!isEditing}
+                  className={errors.phone ? "border-destructive" : ""}
                 />
+                {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
               </div>
             </div>
 

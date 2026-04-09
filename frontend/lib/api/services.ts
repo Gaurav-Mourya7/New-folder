@@ -36,6 +36,21 @@ export async function register(payload: UserDto): Promise<ResponseDto> {
   })
 }
 
+export async function getUser(id: number): Promise<UserDto> {
+  return await requestJson<UserDto>(`/user/${id}`, {
+    method: "GET",
+    auth: true,
+  })
+}
+
+export async function updateUser(id: number, payload: UserDto): Promise<ResponseDto> {
+  return await requestJson<ResponseDto>(`/user/${id}`, {
+    method: "PUT",
+    auth: true,
+    body: JSON.stringify(payload),
+  })
+}
+
 export function toRoleEnum(role: string): Role {
   return role.toUpperCase() as Role
 }
@@ -384,6 +399,13 @@ export async function updateSale(payload: SaleDto): Promise<ResponseDto> {
     method: "PUT",
     auth: true,
     body: JSON.stringify(payload),
+  })
+}
+
+export async function deleteSale(id: number): Promise<ResponseDto> {
+  return await requestJson<ResponseDto>(`/pharmacy/sales/delete/${id}`, {
+    method: "DELETE",
+    auth: true,
   })
 }
 

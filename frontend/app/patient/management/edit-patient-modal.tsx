@@ -44,6 +44,13 @@ interface PatientFormData {
   allergies: string
 }
 
+interface FormErrors {
+  name?: string
+  email?: string
+  phone?: string
+  aadhaarNo?: string
+}
+
 export function EditPatientModal({ isOpen, onClose, onPatientUpdated, patientId }: EditPatientModalProps) {
   const [formData, setFormData] = useState<PatientFormData>({
     name: "",
@@ -61,8 +68,39 @@ export function EditPatientModal({ isOpen, onClose, onPatientUpdated, patientId 
     bloodGroup: "",
     allergies: "",
   })
-
+  const [errors, setErrors] = useState<FormErrors>({})
+  const [apiError, setApiError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {}
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Patient name is required"
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = "Patient name must be at least 2 characters"
+    }
+
+    if (formData.email && !validateEmail(formData.email)) {
+      newErrors.email = "Please enter a valid email address"
+    }
+
+    if (formData.phone && formData.phone.length < 10) {
+      newErrors.phone = "Phone number must be at least 10 digits"
+    }
+
+    if (formData.aadhaarNo && formData.aadhaarNo.length !== 12) {
+      newErrors.aadhaarNo = "Aadhaar number must be 12 digits"
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   useEffect(() => {
     if (isOpen && patientId) {
@@ -98,9 +136,9 @@ export function EditPatientModal({ isOpen, onClose, onPatientUpdated, patientId 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!formData.name.trim()) {
-      alert("Please enter patient name")
+    setApiError(null)
+
+    if (!validateForm()) {
       return
     }
 
@@ -126,9 +164,11 @@ export function EditPatientModal({ isOpen, onClose, onPatientUpdated, patientId 
 
       onPatientUpdated()
       onClose()
+      setErrors({})
     } catch (error) {
       console.error("Failed to update patient:", error)
-      alert("Failed to update patient")
+      const errorMessage = error instanceof Error ? error.message : "Failed to update patient"
+      setApiError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -140,7 +180,13 @@ export function EditPatientModal({ isOpen, onClose, onPatientUpdated, patientId 
         <DialogHeader>
           <DialogTitle>Edit Patient</DialogTitle>
         </DialogHeader>
-        
+
+        {apiError && (
+          <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+            {apiError}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4 flex-1 overflow-y-auto pr-2">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -148,21 +194,30 @@ export function EditPatientModal({ isOpen, onClose, onPatientUpdated, patientId 
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value })
+                  setErrors(prev => ({ ...prev, name: undefined }))
+                }}
                 placeholder="Enter full name"
-                required
+                className={errors.name ? "border-destructive" : ""}
               />
+              {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, email: e.target.value })
+                  setErrors(prev => ({ ...prev, email: undefined }))
+                }}
                 placeholder="email@example.com"
+                className={errors.email ? "border-destructive" : ""}
               />
+              {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
             </div>
           </div>
 
@@ -173,9 +228,14 @@ export function EditPatientModal({ isOpen, onClose, onPatientUpdated, patientId 
                 id="phone"
                 type="tel"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, phone: e.target.value })
+                  setErrors(prev => ({ ...prev, phone: undefined }))
+                }}
                 placeholder="+91 9876543210"
+                className={errors.phone ? "border-destructive" : ""}
               />
+              {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
             </div>
             
             <div className="space-y-2">
@@ -269,10 +329,15 @@ export function EditPatientModal({ isOpen, onClose, onPatientUpdated, patientId 
             <Input
               id="aadhaarNo"
               value={formData.aadhaarNo}
-              onChange={(e) => setFormData({ ...formData, aadhaarNo: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, aadhaarNo: e.target.value })
+                setErrors(prev => ({ ...prev, aadhaarNo: undefined }))
+              }}
               placeholder="12-digit Aadhaar number"
+              className={errors.aadhaarNo ? "border-destructive" : ""}
               maxLength={12}
             />
+            {errors.aadhaarNo && <p className="text-sm text-destructive">{errors.aadhaarNo}</p>}
           </div>
 
           <div className="space-y-2">

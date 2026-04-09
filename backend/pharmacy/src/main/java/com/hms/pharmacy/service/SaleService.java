@@ -16,4 +16,6 @@ public interface SaleService {
     SaleDto getSaleByPrescriptionId(Long prescriptionId) throws HmsException;
 
     List<SaleDto> getAllSales() throws HmsException;
+
+    void deleteSale(Long id) throws HmsException;
 }

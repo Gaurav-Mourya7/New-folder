@@ -66,7 +66,18 @@ export default function LoginPage() {
       else if (role === "DOCTOR") router.push("/doctor")
       else router.push("/pharmacy")
     } catch (err) {
-      setApiError(err instanceof Error ? err.message : "Login failed")
+      // Show specific error messages based on error type
+      const errorMessage = err instanceof Error ? err.message : "Login failed"
+      
+      if (errorMessage.includes("INVALID_CREDENTIALS") || errorMessage.includes("401")) {
+        setApiError("Invalid email or password. Please check your credentials and try again.")
+      } else if (errorMessage.includes("USER_NOT_FOUND") || errorMessage.includes("404")) {
+        setApiError("No account found with this email. Please register or check your email.")
+      } else if (errorMessage.includes("network") || errorMessage.includes("fetch")) {
+        setApiError("Network error. Please check your internet connection and try again.")
+      } else {
+        setApiError(errorMessage)
+      }
     } finally {
       setIsSubmitting(false)
     }

@@ -103,7 +103,26 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void updateUser(UserDto userDto) {
-        throw new UnsupportedOperationException("Unimplemented method 'updated user'");
+        if (userDto.getId() == null) {
+            throw new RuntimeException("User ID is required");
+        }
+        
+        User user = userRepository.findById(userDto.getId()).orElseThrow(() -> new RuntimeException("User not found"));
+        
+        if (userDto.getName() != null) {
+            user.setName(userDto.getName());
+        }
+        if (userDto.getEmail() != null) {
+            user.setEmail(userDto.getEmail());
+        }
+        if (userDto.getPassword() != null && !userDto.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(userDto.getPassword()));
+        }
+        if (userDto.getRole() != null) {
+            user.setRole(userDto.getRole());
+        }
+        
+        userRepository.save(user);
     }
 
     @Override

@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { AppLayout } from "@/components/layout/AppLayout"
+import { useRouter } from "next/navigation"
+import AppLayout from "@/components/layout/AppLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -15,8 +16,10 @@ import {
   Receipt,
   Eye,
   Download,
+  Pencil,
+  Trash2,
 } from "lucide-react"
-import { getAllSales, getSaleItemsBySaleId } from "@/lib/api/services"
+import { getAllSales, getSaleItemsBySaleId, updateSale, deleteSale } from "@/lib/api/services"
 import { NewSaleModal } from "./new-sale-modal"
 
 type SaleUI = {
@@ -30,6 +33,7 @@ type SaleUI = {
 }
 
 export default function SalesList() {
+  const router = useRouter()
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
   const [appliedStartDate, setAppliedStartDate] = useState("")
@@ -150,24 +154,27 @@ export default function SalesList() {
     setTimeout(() => setSuccessMessage(""), 3000)
   }
 
-  const handleViewDetails = async (id: string) => {
-    try {
-      const items = await getSaleItemsBySaleId(Number(id))
-      const msg = [
-        `Sale invoice: ${id}`,
-        `Items: ${items.length}`,
-        "",
-        ...items.map((it, idx) => {
-          const qty = it.quantity ?? 0
-          const price = it.unitPrice ?? 0
-          return `${idx + 1}. medicineId=${it.medicineId ?? ""}, batch=${it.batchNo ?? ""}, qty=${qty}, unitPrice=${price}`
-        }),
-      ].join("\n")
+  const handleViewDetails = (id: string) => {
+    router.push(`/pharmacy/sales/${id}`)
+  }
 
-      window.alert(msg)
-    } catch {
-      setSuccessMessage("Failed to load sale details.")
+  const handleEdit = (id: string) => {
+    // For now, navigate to details page
+    // In future, open edit modal
+    router.push(`/pharmacy/sales/${id}`)
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this sale? This action cannot be undone.")) return
+
+    try {
+      await deleteSale(Number(id))
+      setSuccessMessage("Sale deleted successfully.")
+      await load() // Reload sales data
       setTimeout(() => setSuccessMessage(""), 3000)
+    } catch (error) {
+      console.error("Failed to delete sale:", error)
+      alert("Failed to delete sale")
     }
   }
 
@@ -332,53 +339,119 @@ export default function SalesList() {
             {isLoading ? (
               <div className="py-12 text-center text-muted-foreground">Loading sales...</div>
             ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Invoice</th>
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Customer</th>
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Date</th>
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Items</th>
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Total</th>
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Payment</th>
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Status</th>
-                    <th className="text-right py-3 px-4 font-medium text-muted-foreground text-sm">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <>
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Invoice</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Customer</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Date</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Items</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Total</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Payment</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Status</th>
+                        <th className="text-right py-3 px-4 font-medium text-muted-foreground text-sm">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredSales.map((sale) => (
+                        <tr key={sale.id} className="border-b last:border-0 hover:bg-muted/50">
+                          <td className="py-3 px-4 font-mono text-sm">{sale.id}</td>
+                          <td className="py-3 px-4 font-medium">{sale.customer}</td>
+                          <td className="py-3 px-4 text-muted-foreground">{formatDate(sale.date)}</td>
+                          <td className="py-3 px-4">{sale.items} item{sale.items > 1 ? "s" : ""}</td>
+                          <td className="py-3 px-4 font-medium">${sale.total.toFixed(2)}</td>
+                          <td className="py-3 px-4 text-muted-foreground">{sale.paymentMethod}</td>
+                          <td className="py-3 px-4">{getStatusBadge(sale.status)}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center justify-end">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleViewDetails(sale.id)}
+                                className="size-8"
+                              >
+                                <Eye className="size-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(sale.id)}
+                                className="size-8"
+                              >
+                                <Pencil className="size-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(sale.id)}
+                                className="size-8 text-red-600"
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-4">
                   {filteredSales.map((sale) => (
-                    <tr key={sale.id} className="border-b last:border-0 hover:bg-muted/50">
-                      <td className="py-3 px-4 font-mono text-sm">{sale.id}</td>
-                      <td className="py-3 px-4 font-medium">{sale.customer}</td>
-                      <td className="py-3 px-4 text-muted-foreground">{formatDate(sale.date)}</td>
-                      <td className="py-3 px-4">{sale.items} item{sale.items > 1 ? "s" : ""}</td>
-                      <td className="py-3 px-4 font-medium">${sale.total.toFixed(2)}</td>
-                      <td className="py-3 px-4 text-muted-foreground">{sale.paymentMethod}</td>
-                      <td className="py-3 px-4">{getStatusBadge(sale.status)}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center justify-end">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleViewDetails(sale.id)}
-                            className="size-8"
-                          >
+                    <Card key={sale.id} className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="font-semibold text-lg">{sale.customer}</p>
+                          <p className="text-sm text-blue-600 font-mono">Invoice #{sale.id}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => handleViewDetails(sale.id)} className="size-8">
                             <Eye className="size-4" />
                           </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleEdit(sale.id)} className="size-8">
+                            <Pencil className="size-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(sale.id)} className="size-8 text-red-600">
+                            <Trash2 className="size-4" />
+                          </Button>
                         </div>
-                      </td>
-                    </tr>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Date:</span>
+                          <span className="font-medium">{formatDate(sale.date)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Items:</span>
+                          <span className="font-medium">{sale.items} item{sale.items > 1 ? "s" : ""}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Total:</span>
+                          <span className="font-medium">${sale.total.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Payment:</span>
+                          <span className="font-medium">{sale.paymentMethod}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Status:</span>
+                          {getStatusBadge(sale.status)}
+                        </div>
+                      </div>
+                    </Card>
                   ))}
-                </tbody>
-              </table>
-
-              {filteredSales.length === 0 && (
-                <div className="py-12 text-center text-muted-foreground">
-                  No sales found matching your criteria.
                 </div>
-              )}
-            </div>
+
+                {filteredSales.length === 0 && (
+                  <div className="py-12 text-center text-muted-foreground">
+                    No sales found matching your criteria.
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>

@@ -47,4 +47,10 @@ public class SaleServiceImpl implements SaleService {
     public List<SaleDto> getAllSales() throws HmsException {
         return saleRepository.findAll().stream().map(Sale::toDto).toList();
     }
+
+    @Override
+    public void deleteSale(Long id) throws HmsException {
+        Sale sale = saleRepository.findById(id).orElseThrow(() -> new HmsException("SALE_NOT_FOUND"));
+        saleRepository.delete(sale);
+    }
 }

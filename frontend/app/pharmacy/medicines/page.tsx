@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { AppLayout } from "@/components/layout/AppLayout"
+import AppLayout from "@/components/layout/AppLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -294,68 +294,116 @@ export default function MedicineList() {
                 Loading medicines...
               </div>
             ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">ID</th>
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Name</th>
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Category</th>
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Price</th>
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Stock</th>
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Status</th>
-                    <th className="text-right py-3 px-4 font-medium text-muted-foreground text-sm">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <>
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">ID</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Name</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Category</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Price</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Stock</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">Status</th>
+                        <th className="text-right py-3 px-4 font-medium text-muted-foreground text-sm">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredMedicines.map((medicine) => (
+                        <tr key={medicine.id} className="border-b last:border-0 hover:bg-muted/50">
+                          <td className="py-3 px-4 font-mono text-sm text-blue-600 font-semibold">
+                            #{medicine.id}
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-lg bg-primary/10">
+                                <Pill className="size-4 text-primary" />
+                              </div>
+                              <span className="font-medium">{medicine.name}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-muted-foreground">{medicine.category}</td>
+                          <td className="py-3 px-4 font-medium">${medicine.price.toFixed(2)}</td>
+                          <td className="py-3 px-4">{medicine.stock} units</td>
+                          <td className="py-3 px-4">{getStatusBadge(medicine.status)}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(medicine)}
+                                className="size-8"
+                              >
+                                <Edit className="size-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(medicine)}
+                                className="size-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-4">
                   {filteredMedicines.map((medicine) => (
-                    <tr key={medicine.id} className="border-b last:border-0 hover:bg-muted/50">
-                      <td className="py-3 px-4 font-mono text-sm text-blue-600 font-semibold">
-                        #{medicine.id}
-                      </td>
-                      <td className="py-3 px-4">
+                    <Card key={medicine.id} className="p-4">
+                      <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-3">
                           <div className="p-2 rounded-lg bg-primary/10">
                             <Pill className="size-4 text-primary" />
                           </div>
-                          <span className="font-medium">{medicine.name}</span>
+                          <div>
+                            <p className="font-semibold text-lg">{medicine.name}</p>
+                            <p className="text-sm text-blue-600 font-mono">#{medicine.id}</p>
+                          </div>
                         </div>
-                      </td>
-                      <td className="py-3 px-4 text-muted-foreground">{medicine.category}</td>
-                      <td className="py-3 px-4 font-medium">${medicine.price.toFixed(2)}</td>
-                      <td className="py-3 px-4">{medicine.stock} units</td>
-                      <td className="py-3 px-4">{getStatusBadge(medicine.status)}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(medicine)}
-                            className="size-8"
-                          >
+                        <div className="flex gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => handleEdit(medicine)} className="size-8">
                             <Edit className="size-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(medicine)}
-                            className="size-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(medicine)} className="size-8 text-red-600">
                             <Trash2 className="size-4" />
                           </Button>
                         </div>
-                      </td>
-                    </tr>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Category:</span>
+                          <span className="font-medium">{medicine.category}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Price:</span>
+                          <span className="font-medium">${medicine.price.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Stock:</span>
+                          <span className="font-medium">{medicine.stock} units</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Status:</span>
+                          {getStatusBadge(medicine.status)}
+                        </div>
+                      </div>
+                    </Card>
                   ))}
-                </tbody>
-              </table>
-
-              {filteredMedicines.length === 0 && (
-                <div className="py-12 text-center text-muted-foreground">
-                  No medicines found matching your criteria.
                 </div>
-              )}
-            </div>
+
+                {filteredMedicines.length === 0 && (
+                  <div className="py-12 text-center text-muted-foreground">
+                    No medicines found matching your criteria.
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>

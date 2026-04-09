@@ -146,6 +146,7 @@ export interface RecordDetails {
   referral?: string | null
   followUpDate?: string | null
   createdAt?: string | null
+  mediaFileIds?: number[] | null
 }
 
 // -------------------------
@@ -179,15 +180,22 @@ export interface SaleDto {
   prescriptionId?: number | null
   saleDate?: string | null // LocalDateTime
   totalAmount?: number | null
+  customerName?: string | null
+  customerPhone?: string | null
+  paymentMethod?: string | null
+  notes?: string | null
+  saleItems?: SaleItemDto[]
 }
 
 export interface SaleItemDto {
   id?: number | null
   saleId?: number | null
   medicineId?: number | null
+  medicineName?: string | null
   batchNo?: string | null
   quantity?: number | null
   unitPrice?: number | null
+  totalAmount?: number | null
 }
 
 // -------------------------

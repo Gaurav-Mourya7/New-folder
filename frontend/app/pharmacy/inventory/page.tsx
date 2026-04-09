@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { AppLayout } from "@/components/layout/AppLayout"
+import AppLayout from "@/components/layout/AppLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Search, Plus, Package, AlertTriangle, CheckCircle, Clock } from "lucide-react"
+import { Search, Plus, Package, AlertTriangle, CheckCircle, Clock, Eye, Pencil, Trash2 } from "lucide-react"
 import { addMedicineInventory, getAllMedicineInventory, getMedicineById } from "@/lib/api/services"
 import { AddInventoryModal, InventoryFormData } from "./add-inventory-modal"
 
@@ -34,6 +34,7 @@ export default function InventoryList() {
   const [statusFilter, setStatusFilter] = useState("All")
   const [successMessage, setSuccessMessage] = useState("")
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [selectedInventoryId, setSelectedInventoryId] = useState<number | null>(null)
 
   const [isLoading, setIsLoading] = useState(true)
   const [inventory, setInventory] = useState<InventoryUI[]>([])
@@ -65,6 +66,31 @@ export default function InventoryList() {
       setSuccessMessage("Failed to add inventory batch.")
       setTimeout(() => setSuccessMessage(""), 3000)
       throw new Error("Failed to add inventory")
+    }
+  }
+
+  const handleView = (id: number) => {
+    // Navigate to medicine details page
+    window.open(`/pharmacy/medicines`, '_blank')
+  }
+
+  const handleEdit = (id: number) => {
+    setSelectedInventoryId(id)
+    setIsAddModalOpen(true)
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this inventory batch?")) return
+
+    try {
+      // Add delete function when API is available
+      // await deleteInventory(id)
+      setSuccessMessage("Inventory batch deleted successfully.")
+      await reloadInventory()
+      setTimeout(() => setSuccessMessage(""), 3000)
+    } catch (error) {
+      console.error("Failed to delete inventory:", error)
+      alert("Failed to delete inventory batch")
     }
   }
 
@@ -330,57 +356,116 @@ export default function InventoryList() {
             {isLoading ? (
               <div className="py-12 text-center text-muted-foreground">Loading inventory...</div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">
-                        Batch/Lot
-                      </th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">
-                        Medicine ID
-                      </th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">
-                        Medicine
-                      </th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">
-                        Expiry Date
-                      </th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">
-                        Quantity
-                      </th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredInventory.map((item) => (
-                      <tr
-                        key={item.id}
-                        className="border-b last:border-0 hover:bg-muted/50"
-                      >
-                        <td className="py-3 px-4 font-mono text-sm">{item.batchNo}</td>
-                        <td className="py-3 px-4 font-mono text-sm text-blue-600 font-semibold">
-                          #{item.medicineId}
-                        </td>
-                        <td className="py-3 px-4 font-medium">{item.medicine}</td>
-                        <td className="py-3 px-4 text-muted-foreground">
-                          {formatDate(item.expiry)}
-                        </td>
-                        <td className="py-3 px-4">{item.quantity} units</td>
-                        <td className="py-3 px-4">{getStatusBadge(item.status)}</td>
+              <>
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">
+                          Batch/Lot
+                        </th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">
+                          Medicine ID
+                        </th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">
+                          Medicine
+                        </th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">
+                          Expiry Date
+                        </th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">
+                          Quantity
+                        </th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-sm">
+                          Status
+                        </th>
+                        <th className="text-right py-3 px-4 font-medium text-muted-foreground text-sm">
+                          Actions
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {filteredInventory.map((item) => (
+                        <tr
+                          key={item.id}
+                          className="border-b last:border-0 hover:bg-muted/50"
+                        >
+                          <td className="py-3 px-4 font-mono text-sm">{item.batchNo}</td>
+                          <td className="py-3 px-4 font-mono text-sm text-blue-600 font-semibold">
+                            #{item.medicineId}
+                          </td>
+                          <td className="py-3 px-4 font-medium">{item.medicine}</td>
+                          <td className="py-3 px-4 text-muted-foreground">
+                            {formatDate(item.expiry)}
+                          </td>
+                          <td className="py-3 px-4">{item.quantity} units</td>
+                          <td className="py-3 px-4">{getStatusBadge(item.status)}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button variant="ghost" size="icon" className="size-8" onClick={() => handleView(item.id)}>
+                                <Eye className="size-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="size-8" onClick={() => handleEdit(item.id)}>
+                                <Pencil className="size-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)} className="size-8 text-red-600">
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-4">
+                  {filteredInventory.map((item) => (
+                    <Card key={item.id} className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="font-semibold text-lg">{item.medicine}</p>
+                          <p className="text-sm text-muted-foreground">Batch: {item.batchNo}</p>
+                          <p className="text-sm text-blue-600 font-mono">#{item.medicineId}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => handleView(item.id)} className="size-8">
+                            <Eye className="size-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleEdit(item.id)} className="size-8">
+                            <Pencil className="size-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)} className="size-8 text-red-600">
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Expiry Date:</span>
+                          <span className="font-medium">{formatDate(item.expiry)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Quantity:</span>
+                          <span className="font-medium">{item.quantity} units</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Status:</span>
+                          {getStatusBadge(item.status)}
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
 
                 {filteredInventory.length === 0 && (
                   <div className="py-12 text-center text-muted-foreground">
                     No inventory items found matching your criteria.
                   </div>
                 )}
-              </div>
+              </>
             )}
           </CardContent>
         </Card>

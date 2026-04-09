@@ -49,4 +49,10 @@ public class SaleController {
         return new ResponseEntity<>(saleService.getAllSales(), HttpStatus.OK);
     }
 
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<ResponseDto> deleteSale(@PathVariable Long id) throws HmsException {
+        saleService.deleteSale(id);
+        return new ResponseEntity<>(new ResponseDto("Sale deleted successfully"), HttpStatus.OK);
+    }
+
 }

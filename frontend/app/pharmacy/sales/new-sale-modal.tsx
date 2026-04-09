@@ -36,6 +36,14 @@ interface SaleItem {
   total: number
 }
 
+interface FormErrors {
+  customerName?: string
+  saleItems?: string
+  medicine?: string
+  batch?: string
+  quantity?: string
+}
+
 export function NewSaleModal({ isOpen, onClose, onSaleCreated }: NewSaleModalProps) {
   const [customerName, setCustomerName] = useState("")
   const [paymentMethod, setPaymentMethod] = useState("CASH")
@@ -45,6 +53,8 @@ export function NewSaleModal({ isOpen, onClose, onSaleCreated }: NewSaleModalPro
   const [selectedMedicine, setSelectedMedicine] = useState("")
   const [selectedBatch, setSelectedBatch] = useState("")
   const [quantity, setQuantity] = useState(1)
+  const [errors, setErrors] = useState<FormErrors>({})
+  const [apiError, setApiError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   const totalAmount = saleItems.reduce((sum, item) => sum + item.total, 0)
@@ -99,14 +109,28 @@ export function NewSaleModal({ isOpen, onClose, onSaleCreated }: NewSaleModalPro
   }
 
   const addSaleItem = () => {
-    if (!selectedMedicine || !selectedBatch || quantity <= 0) {
-      alert("Please select medicine, batch, and quantity")
+    const newErrors: FormErrors = {}
+
+    if (!selectedMedicine) {
+      newErrors.medicine = "Please select a medicine"
+    }
+
+    if (!selectedBatch) {
+      newErrors.batch = "Please select a batch"
+    }
+
+    if (quantity <= 0) {
+      newErrors.quantity = "Quantity must be greater than 0"
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
       return
     }
 
     const batch = inventory.find(item => item.batchNo === selectedBatch)
     if (!batch || batch.quantity < quantity) {
-      alert("Insufficient stock for this batch")
+      setErrors({ quantity: "Insufficient stock for this batch" })
       return
     }
 
@@ -124,6 +148,7 @@ export function NewSaleModal({ isOpen, onClose, onSaleCreated }: NewSaleModalPro
     setSelectedMedicine("")
     setSelectedBatch("")
     setQuantity(1)
+    setErrors({})
   }
 
   const removeSaleItem = (index: number) => {
@@ -132,33 +157,55 @@ export function NewSaleModal({ isOpen, onClose, onSaleCreated }: NewSaleModalPro
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!customerName.trim() || saleItems.length === 0) {
-      alert("Please enter customer name and add at least one item")
+    setApiError(null)
+
+    const newErrors: FormErrors = {}
+
+    if (!customerName.trim()) {
+      newErrors.customerName = "Customer name is required"
+    } else if (customerName.trim().length < 2) {
+      newErrors.customerName = "Customer name must be at least 2 characters"
+    }
+
+    if (saleItems.length === 0) {
+      newErrors.saleItems = "Please add at least one item to the sale"
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
       return
     }
 
     setIsLoading(true)
     try {
-      // Create sale
+      // Create sale with items
       const sale = await createSale({
         saleDate: new Date().toISOString(),
-        totalAmount: totalAmount
+        totalAmount: totalAmount,
+        customerName: customerName,
+        paymentMethod: paymentMethod,
+        saleItems: saleItems.map(item => ({
+          medicineId: item.medicineId,
+          medicineName: item.medicineName,
+          batchNo: item.batchNo,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalAmount: item.total
+        }))
       } as any)
 
-      // Create sale items (you'll need to implement this API call)
-      // await createSaleItems for each item
-      
       onSaleCreated()
       onClose()
-      
+
       // Reset form
       setCustomerName("")
       setPaymentMethod("CASH")
       setSaleItems([])
+      setErrors({})
     } catch (error) {
       console.error("Failed to create sale:", error)
-      alert("Failed to create sale")
+      const errorMessage = error instanceof Error ? error.message : "Failed to create sale"
+      setApiError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -170,7 +217,13 @@ export function NewSaleModal({ isOpen, onClose, onSaleCreated }: NewSaleModalPro
         <DialogHeader>
           <DialogTitle>New Sale</DialogTitle>
         </DialogHeader>
-        
+
+        {apiError && (
+          <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+            {apiError}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4 flex-1 overflow-y-auto pr-2">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -178,10 +231,14 @@ export function NewSaleModal({ isOpen, onClose, onSaleCreated }: NewSaleModalPro
               <Input
                 id="customerName"
                 value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
+                onChange={(e) => {
+                  setCustomerName(e.target.value)
+                  setErrors(prev => ({ ...prev, customerName: undefined }))
+                }}
                 placeholder="Enter customer name"
-                required
+                className={errors.customerName ? "border-destructive" : ""}
               />
+              {errors.customerName && <p className="text-sm text-destructive">{errors.customerName}</p>}
             </div>
             
             <div className="space-y-2">
@@ -202,53 +259,71 @@ export function NewSaleModal({ isOpen, onClose, onSaleCreated }: NewSaleModalPro
 
           <div className="border rounded-lg p-4 space-y-4 pb-8">
             <h3 className="font-medium">Add Items</h3>
-            
+
             <div className="flex gap-3 items-center">
-              <Select value={selectedMedicine} onValueChange={setSelectedMedicine}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Medicine" />
-                </SelectTrigger>
-                <SelectContent className="z-50" position="popper" sideOffset={5}>
-                  {medicines.map((medicine) => (
-                    <SelectItem key={medicine.id} value={medicine.id.toString()}>
-                      {medicine.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex-1 space-y-1">
+                <Select value={selectedMedicine} onValueChange={(value) => {
+                  setSelectedMedicine(value)
+                  setErrors(prev => ({ ...prev, medicine: undefined }))
+                }}>
+                  <SelectTrigger className={errors.medicine ? "border-destructive" : ""}>
+                    <SelectValue placeholder="Medicine" />
+                  </SelectTrigger>
+                  <SelectContent className="z-50" position="popper" sideOffset={5}>
+                    {medicines.map((medicine) => (
+                      <SelectItem key={medicine.id} value={medicine.id.toString()}>
+                        {medicine.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.medicine && <p className="text-sm text-destructive">{errors.medicine}</p>}
+              </div>
 
-              <Select 
-                value={selectedBatch} 
-                onValueChange={setSelectedBatch}
-                disabled={!selectedMedicine}
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Batch" />
-                </SelectTrigger>
-                <SelectContent className="z-50" position="popper" sideOffset={5}>
-                  {getAvailableBatches(selectedMedicine).map((batch) => (
-                    <SelectItem key={batch.id} value={batch.batchNo}>
-                      <div className="flex flex-col">
-                        <span>{batch.batchNo}</span>
-                        <span className="text-xs text-muted-foreground">{batch.quantity} available</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex-1 space-y-1">
+                <Select
+                  value={selectedBatch}
+                  onValueChange={(value) => {
+                    setSelectedBatch(value)
+                    setErrors(prev => ({ ...prev, batch: undefined }))
+                  }}
+                  disabled={!selectedMedicine}
+                >
+                  <SelectTrigger className={errors.batch ? "border-destructive" : ""}>
+                    <SelectValue placeholder="Batch" />
+                  </SelectTrigger>
+                  <SelectContent className="z-50" position="popper" sideOffset={5}>
+                    {getAvailableBatches(selectedMedicine).map((batch) => (
+                      <SelectItem key={batch.id} value={batch.batchNo}>
+                        <div className="flex flex-col">
+                          <span>{batch.batchNo}</span>
+                          <span className="text-xs text-muted-foreground">{batch.quantity} available</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.batch && <p className="text-sm text-destructive">{errors.batch}</p>}
+              </div>
 
-              <Input
-                type="number"
-                min="1"
-                value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value))}
-                placeholder="Qty"
-                disabled={!selectedBatch}
-                className="w-20 text-center"
-              />
+              <div className="space-y-1">
+                <Input
+                  type="number"
+                  min="1"
+                  value={quantity}
+                  onChange={(e) => {
+                    setQuantity(Number(e.target.value))
+                    setErrors(prev => ({ ...prev, quantity: undefined }))
+                  }}
+                  placeholder="Qty"
+                  disabled={!selectedBatch}
+                  className={`w-20 text-center ${errors.quantity ? "border-destructive" : ""}`}
+                />
+                {errors.quantity && <p className="text-sm text-destructive text-center">{errors.quantity}</p>}
+              </div>
 
-              <Button 
-                type="button" 
+              <Button
+                type="button"
                 onClick={addSaleItem}
                 disabled={!selectedMedicine || !selectedBatch}
                 className="gap-1"
@@ -258,6 +333,10 @@ export function NewSaleModal({ isOpen, onClose, onSaleCreated }: NewSaleModalPro
               </Button>
             </div>
           </div>
+
+          {errors.saleItems && (
+            <p className="text-sm text-destructive">{errors.saleItems}</p>
+          )}
 
           {saleItems.length > 0 && (
             <div className="border rounded-lg p-4 mt-4">

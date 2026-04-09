@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { Calendar, Clock, Search, Filter, ChevronRight, Plus } from "lucide-react"
-import { AppLayout } from "@/components/layout/AppLayout"
+import AppLayout from "@/components/layout/AppLayout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -82,7 +82,7 @@ export default function MyAppointments() {
 
         const mapped = details.map((d) => {
           const backendStatus = d.status
-          const status =
+          const status: "upcoming" | "completed" | "cancelled" =
             backendStatus === "SCHEDULED"
               ? "upcoming"
               : backendStatus === "COMPLETED"

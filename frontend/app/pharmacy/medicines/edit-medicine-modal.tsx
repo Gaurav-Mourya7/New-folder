@@ -36,6 +36,13 @@ export interface MedicineFormData {
   unitPrice: number
 }
 
+interface FormErrors {
+  name?: string
+  dosage?: string
+  manufacturer?: string
+  unitPrice?: string
+}
+
 export interface MedicineUI {
   id: number
   name: string
@@ -83,7 +90,9 @@ export function EditMedicineModal({ isOpen, onClose, onEditMedicine, medicine }:
     manufacturer: "",
     unitPrice: 0,
   })
+  const [errors, setErrors] = useState<FormErrors>({})
   const [isLoading, setIsLoading] = useState(false)
+  const [apiError, setApiError] = useState<string | null>(null)
 
   // Update form data when medicine changes
   useEffect(() => {
@@ -100,20 +109,48 @@ export function EditMedicineModal({ isOpen, onClose, onEditMedicine, medicine }:
     }
   }, [medicine])
 
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {}
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Medicine name is required"
+    } else if (formData.name.trim().length < 3) {
+      newErrors.name = "Medicine name must be at least 3 characters"
+    }
+
+    if (!formData.dosage.trim()) {
+      newErrors.dosage = "Dosage is required"
+    }
+
+    if (!formData.manufacturer.trim()) {
+      newErrors.manufacturer = "Manufacturer is required"
+    }
+
+    if (formData.unitPrice <= 0) {
+      newErrors.unitPrice = "Unit price must be greater than 0"
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!formData.name || !formData.dosage) {
-      alert("Please fill in all required fields")
+    setApiError(null)
+
+    if (!validateForm()) {
       return
     }
 
     setIsLoading(true)
     try {
       await onEditMedicine(formData)
+      setErrors({})
       onClose()
     } catch (error) {
       console.error("Failed to edit medicine:", error)
+      const errorMessage = error instanceof Error ? error.message : "Failed to edit medicine"
+      setApiError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -125,7 +162,13 @@ export function EditMedicineModal({ isOpen, onClose, onEditMedicine, medicine }:
         <DialogHeader>
           <DialogTitle>Edit Medicine</DialogTitle>
         </DialogHeader>
-        
+
+        {apiError && (
+          <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+            {apiError}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -133,21 +176,29 @@ export function EditMedicineModal({ isOpen, onClose, onEditMedicine, medicine }:
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, name: e.target.value }))
+                  setErrors(prev => ({ ...prev, name: undefined }))
+                }}
                 placeholder="e.g., Amoxicillin"
-                required
+                className={errors.name ? "border-destructive" : ""}
               />
+              {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="dosage">Dosage *</Label>
               <Input
                 id="dosage"
                 value={formData.dosage}
-                onChange={(e) => setFormData(prev => ({ ...prev, dosage: e.target.value }))}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, dosage: e.target.value }))
+                  setErrors(prev => ({ ...prev, dosage: undefined }))
+                }}
                 placeholder="e.g., 500mg"
-                required
+                className={errors.dosage ? "border-destructive" : ""}
               />
+              {errors.dosage && <p className="text-sm text-destructive">{errors.dosage}</p>}
             </div>
           </div>
 
@@ -193,31 +244,41 @@ export function EditMedicineModal({ isOpen, onClose, onEditMedicine, medicine }:
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="manufacturer">Manufacturer</Label>
+              <Label htmlFor="manufacturer">Manufacturer *</Label>
               <Input
                 id="manufacturer"
                 value={formData.manufacturer}
-                onChange={(e) => setFormData(prev => ({ ...prev, manufacturer: e.target.value }))}
-                placeholder="Manufacturer name"
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, manufacturer: e.target.value }))
+                  setErrors(prev => ({ ...prev, manufacturer: undefined }))
+                }}
+                placeholder="e.g., Pfizer"
+                className={errors.manufacturer ? "border-destructive" : ""}
               />
+              {errors.manufacturer && <p className="text-sm text-destructive">{errors.manufacturer}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="unitPrice">Unit Price ($)</Label>
+              <Label htmlFor="unitPrice">Unit Price *</Label>
               <Input
                 id="unitPrice"
                 type="number"
-                step="0.01"
                 min="0"
-                value={formData.unitPrice}
-                onChange={(e) => setFormData(prev => ({ ...prev, unitPrice: Number(e.target.value) }))}
-                placeholder="0.00"
+                step="0.01"
+                value={formData.unitPrice || ""}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, unitPrice: parseFloat(e.target.value) || 0 }))
+                  setErrors(prev => ({ ...prev, unitPrice: undefined }))
+                }}
+                placeholder="e.g., 10.50"
+                className={errors.unitPrice ? "border-destructive" : ""}
               />
+              {errors.unitPrice && <p className="text-sm text-destructive">{errors.unitPrice}</p>}
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>

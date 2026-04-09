@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import { useNotifications } from "@/contexts/NotificationContext"
 import {
   Heart,
   LayoutDashboard,
@@ -17,6 +18,7 @@ import {
   DollarSign,
   Stethoscope,
   Users,
+  FileText,
   type LucideIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -51,6 +53,7 @@ const navigationByRole: Record<RoleLabel, NavItem[]> = {
     { name: "My Profile", href: "/patient/profile", icon: User },
     { name: "Book Appointment", href: "/patient/book-appointment", icon: CalendarPlus },
     { name: "My Appointments", href: "/patient/appointments", icon: Calendar },
+    { name: "Medical Records", href: "/patient/medical-history", icon: FileText },
   ],
   Doctor: [
     { name: "Dashboard", href: "/doctor", icon: LayoutDashboard },
@@ -65,6 +68,8 @@ const navigationByRole: Record<RoleLabel, NavItem[]> = {
     { name: "Sales", href: "/pharmacy/sales", icon: DollarSign },
     { name: "Patients", href: "/patient/management", icon: Users },
     { name: "Doctors", href: "/doctor/management", icon: Stethoscope },
+    { name: "Appointments", href: "/appointments/management", icon: Calendar },
+    { name: "Medical Records", href: "/appointments/medical-record/admin", icon: FileText },
   ],
 }
 
@@ -83,7 +88,7 @@ function inferRoleLabelFromToken(token: string | null): RoleLabel {
   return "Patient"
 }
 
-export function AppLayout({ children, roleLabel, title }: AppLayoutProps) {
+export default function AppLayout({ children, roleLabel, title }: AppLayoutProps) {
   const router = useRouter()
   const [authReady, setAuthReady] = useState(false)
   const [inferredRoleLabel, setInferredRoleLabel] = useState<RoleLabel>("Patient")
@@ -93,7 +98,8 @@ export function AppLayout({ children, roleLabel, title }: AppLayoutProps) {
   const pathname = usePathname()
 
   const [displayName, setDisplayName] = useState<string>("")
-  const [hasNotifications] = useState(false)
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications()
+  const [showNotificationPanel, setShowNotificationPanel] = useState(false)
 
   const homeHref = useMemo(() => {
     if (effectiveRoleLabel === "Doctor") return "/doctor"
@@ -103,7 +109,7 @@ export function AppLayout({ children, roleLabel, title }: AppLayoutProps) {
 
   const profileHref = useMemo(() => {
     if (effectiveRoleLabel === "Doctor") return "/doctor/profile"
-    if (effectiveRoleLabel === "Admin") return "/pharmacy"
+    if (effectiveRoleLabel === "Admin") return "/admin/profile"
     return "/patient/profile"
   }, [effectiveRoleLabel])
 
@@ -221,15 +227,82 @@ export function AppLayout({ children, roleLabel, title }: AppLayoutProps) {
               variant="ghost"
               size="icon"
               className="relative"
-              disabled={!hasNotifications}
-              title={hasNotifications ? "Notifications" : "No notifications"}
+              title={unreadCount > 0 ? `${unreadCount} unread notifications` : "No notifications"}
+              onClick={() => setShowNotificationPanel(!showNotificationPanel)}
             >
               <Bell className="size-5" />
-              {hasNotifications ? (
+              {unreadCount > 0 && (
                 <span className="absolute top-1.5 right-1.5 size-2 bg-primary rounded-full" />
-              ) : null}
+              )}
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 size-5 bg-primary text-white text-xs rounded-full flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              )}
               <span className="sr-only">Notifications</span>
             </Button>
+
+            {/* Notification Panel */}
+            {showNotificationPanel && (
+              <div className="absolute right-0 top-12 w-80 bg-background border rounded-lg shadow-lg z-50">
+                <div className="p-4 border-b flex items-center justify-between">
+                  <h3 className="font-semibold">Notifications</h3>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => markAllAsRead()}
+                      disabled={unreadCount === 0}
+                    >
+                      Mark all read
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowNotificationPanel(false)}
+                    >
+                      ×
+                    </Button>
+                  </div>
+                </div>
+                <div className="max-h-96 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="p-4 text-center text-muted-foreground">
+                      No notifications
+                    </div>
+                  ) : (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`p-4 border-b last:border-0 cursor-pointer hover:bg-muted/50 ${
+                          !notification.read ? "bg-primary/5" : ""
+                        }`}
+                        onClick={() => {
+                          markAsRead(notification.id)
+                          // Handle notification click based on type
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`size-2 mt-2 rounded-full ${
+                            notification.type === "appointment" ? "bg-blue-500" :
+                            notification.type === "medical_record" ? "bg-green-500" :
+                            notification.type === "sale" ? "bg-purple-500" :
+                            "bg-gray-500"
+                          }`} />
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{notification.title}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{notification.message}</p>
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {new Date(notification.timestamp).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
 
             <Link
               href={profileHref}
