@@ -18,9 +18,9 @@ import {
   User,
   Stethoscope,
 } from "lucide-react"
-import { scheduleAppointment, cancelAppointment, completeAppointment } from "@/lib/api/services"
+import { scheduleAppointment, cancelAppointment, completeAppointment, getAllAppointments } from "@/lib/api/services"
 import { ScheduleAppointmentModal } from "./schedule-appointment-modal"
-import type { AppointmentDetails } from "@/lib/api/types"
+import type { AppointmentDetails } from "@/lib/api/types" 
 
 type AppointmentUI = {
   id: string
@@ -44,9 +44,20 @@ export default function AppointmentManagement() {
 
   const loadAppointments = async () => {
     try {
-      // For demo purposes, we'll load empty for now
-      // In production, this would call a getAllAppointments endpoint
-      setAppointments([])
+      const data = await getAllAppointments()
+      const mappedData: AppointmentUI[] = data.map((apt) => ({
+        id: String(apt.id),
+        patientId: String(apt.patientId),
+        patientName: apt.patientName,
+        patientPhone: apt.patientPhone,
+        patientEmail: apt.patientEmail,
+        doctorId: String(apt.doctorId),
+        doctorName: apt.doctorName,
+        appointmentTime: apt.appointmentTime,
+        status: apt.status,
+        reason: apt.reason || "",
+      }))
+      setAppointments(mappedData)
     } catch (error) {
       console.error("Failed to load appointments:", error)
       setAppointments([])

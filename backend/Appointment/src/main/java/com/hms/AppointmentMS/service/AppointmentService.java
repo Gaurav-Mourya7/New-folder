@@ -23,4 +23,6 @@ public interface AppointmentService {
     List <AppointmentDetails> getAllAppointmentByPatientId(Long patientId) throws HmsException;
 
     List <AppointmentDetails> getAllAppointmentByDoctorId(Long doctorId) throws HmsException;
+
+    List<AppointmentDetails> getAllAppointments() throws HmsException;
 }

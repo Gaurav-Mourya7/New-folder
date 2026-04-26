@@ -48,6 +48,11 @@ public class AppointmentController {
         return new ResponseEntity<>(appointmentService.getAllAppointmentByDoctorId(doctorId),HttpStatus.OK);
     }
 
+    @GetMapping("/getAll")
+    public ResponseEntity<List<AppointmentDetails>> getAllAppointments() throws HmsException {
+        return new ResponseEntity<>(appointmentService.getAllAppointments(), HttpStatus.OK);
+    }
+
     @PutMapping("/cancel/{appointmentId}")
     public ResponseEntity<String> cancelAppointment(@PathVariable Long appointmentId) throws HmsException {
         appointmentService.cancelAppointment(appointmentId);

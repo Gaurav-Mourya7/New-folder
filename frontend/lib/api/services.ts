@@ -222,6 +222,13 @@ export async function getAllAppointmentsByDoctor(doctorId: number): Promise<Appo
   })
 }
 
+export async function getAllAppointments(): Promise<AppointmentDetails[]> {
+  return await requestJson<AppointmentDetails[]>(`/appointment/getAll`, {
+    method: "GET",
+    auth: true,
+  })
+}
+
 export async function cancelAppointment(appointmentId: number): Promise<string> {
   return await requestJson<string>(`/appointment/cancel/${appointmentId}`, {
     method: "PUT",

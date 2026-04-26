@@ -14,4 +14,6 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     @Query("SELECT new com.hms.AppointmentMS.dto.AppointmentDetails(a.id, a.patientId, null, null, null, a.doctorId, null, a.appointmentTime, a.status, a.reason, a.notes) FROM Appointment a WHERE a.doctorId = ?1")
     List<AppointmentDetails> findAllByDoctorId(Long doctorId);
+
+    List<Appointment> findAll();
 }
